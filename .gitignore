@@ -1,6 +1,7 @@
 
 Debug/
 Release/
+targetConfigs/
 
 .launches/
 .config/
