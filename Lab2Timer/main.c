@@ -36,8 +36,6 @@ int main(void)
   count_flag = 0;
   counter = THIRTY_REPS;   
 
-  test(5);
-
   P1DIR |= BIT0;                            // P1.0 output
   P1OUT =  BIT3;                            // P1.3 set, else reset
   P1REN |= BIT3;                            // P1.3 pullup
