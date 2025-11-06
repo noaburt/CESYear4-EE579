@@ -29,20 +29,23 @@
 
 #define SWITCH_T 7000
 
-short f_flag = 0;
+short tone_flag = 0;
+short tune_flag = 0;
 
 int main(void)
 {
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
-  P2DIR |= BIT2;                            // P2.1 output
-  P2SEL |= BIT2;                            // P2.1 for TA1.1 output
+  ADC10CTL0 = SREF_1 + ADC10SHT_2 + REFON + ADC10ON + ADC10IE;
+
+  P2DIR |= BIT2;                            // P2.2 output - since LED is P2.1
+  P2SEL |= BIT2;                            // P2.2 for TA1.1 output
   P2SEL2 &= ~(BIT2);								// Select default function for P2.1
 
   TA1CCR0 = LOW_PWM-1;                               // PWM Period
   TA1CCTL1 = OUTMOD_7;                               // CCR1 reset/set
   TA1CCR1 = LOW_PWM / DUTY_PWM;                      // CCR1 PWM duty cycle
-  TA1CTL = TASSEL_1 + MC_1;                        // SMCLK, up mode
+  TA1CTL = TASSEL_1 + MC_1;                        // ACLK, up mode
 
   TA0CCR0 = SWITCH_T-1;                          // PWM Period
   TA0CCTL1 = OUTMOD_3;                       // TACCR1 set/reset
@@ -50,24 +53,35 @@ int main(void)
 
   TA0CCTL0 |= CCIE;                          // Compare-mode interrupt.
 
-  __bis_SR_register(LPM3_bits + GIE);
+  ADC10CTL1 = INCH_1;                       // input A1 - P1.1
+  ADC10AE0 |= BIT2;                         // PA.1 ADC option select
+  P1DIR |= BIT1;                            // Set P1.0 to output direction - testing
+
+  for (;;) {
+    //ADC10CTL0 |= ENC + ADC10SC;             // Sampling and conversion start
+    __bis_SR_register(LPM3_bits + GIE);
+    
+    if (ADC10MEM < 0x88)                    // ADC10MEM = A1 > 0.2V?
+      P1OUT &= ~0x01;                       // Clear P1.0 LED off
+    else
+      P1OUT |= 0x01;                        // Set P1.0 LED on
+    
+  }
 }
 
 
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void TA0_ISR(void)
 {
-  // Switch high / low frequency
-
-  if (f_flag == 0) {
+  if (tone_flag == 0) {
     // switch to high
     TA1CCR0 = HIGH_PWM-1;
     TA1CCR1 = HIGH_PWM / DUTY_PWM;
-    f_flag = 1;
+    tone_flag = 1;
   } else {
     // switch to low
     TA1CCR0 = LOW_PWM-1;
     TA1CCR1 = LOW_PWM / DUTY_PWM;
-    f_flag = 0;
+    tone_flag = 0;
   }
 }

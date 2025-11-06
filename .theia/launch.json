@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Lab3Alarm",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "Lab3Alarm",
+                "resourceId": "/Lab3Alarm"
+            }
+        }
+    ]
+}
