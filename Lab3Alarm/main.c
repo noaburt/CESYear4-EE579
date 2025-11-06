@@ -32,7 +32,7 @@
 #define TUNE_MAX 16
 
 unsigned short tone_flag = 0;
-unsigned short tune_flag = 1;
+unsigned short tune_flag = 0;
 
 double tune_val[2] = {0};
 
@@ -72,6 +72,7 @@ int main(void)
   P2SEL |= BIT2;                            // P2.2 for TA1.1 output
   P2SEL2 &= ~(BIT2);								// Select default function for P2.1
 
+  /* PWM Setup */
   TA1CCR0 = 64-1;                               // PWM Period
   TA1CCTL1 = OUTMOD_7;                               // CCR1 reset/set
   TA1CCR1 = 32;                      // CCR1 PWM duty cycle
@@ -87,30 +88,9 @@ int main(void)
     adc_read = ADC10MEM;
 
     /* Map adc read value from 0 - 3.3v to -16 - 16 */
-    tune_calc = ( (float)adc_read / 0x3FF ) * 0x20; // ( adc_read / 0x3FF ) * 0x20
+    tune_calc = ( (float)adc_read / 0x3FF ) * 0x20; // ( adc_read / 1023 ) * 32
     tune_val[tune_flag] = -16 + floor(tune_calc);
   }
-}
-
-// Port 1 interrupt service routine
-#pragma vector=PORT1_VECTOR
-__interrupt void Port_1(void)
-{
-  tune_flag = ~tune_flag;
-  P1IFG &= ~BIT3;                           // P1.3 IFG cleared
-}
-
-// ADC10 interrupt service routine
-#pragma vector=ADC10_VECTOR
-__interrupt void ADC10_ISR (void)
-{
-  LPM3_EXIT;
-}
-
-#pragma vector=TIMER1_A0_VECTOR
-__interrupt void ta1_isr(void)
-{
-  LPM3_EXIT;
 }
 
 #pragma vector=TIMER0_A0_VECTOR
@@ -127,5 +107,29 @@ __interrupt void TA0_ISR(void)
     }
 
   tone_flag = ~(tone_flag);
+  LPM3_EXIT;
+}
+
+#pragma vector=PORT1_VECTOR
+__interrupt void Port_1(void)
+{
+  if (tune_flag == 0) {
+    tune_flag = 1;
+  } else {
+    tune_flag = 0;
+  }
+
+  P1IFG &= ~BIT3;
+}
+
+#pragma vector=ADC10_VECTOR
+__interrupt void ADC10_ISR (void)
+{
+  LPM3_EXIT;
+}
+
+#pragma vector=TIMER1_A0_VECTOR
+__interrupt void TA1_ISR(void)
+{
   LPM3_EXIT;
 }
