@@ -70,17 +70,29 @@
 int main(void)
 {
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
+
+  /* ADC Setup */
   ADC10CTL0 = SREF_1 + ADC10SHT_2 + REFON + ADC10ON + ADC10IE;
   __enable_interrupt();                     // Enable interrupts.
-  TACCR0 = 30;                              // Delay to allow Ref to settle
-  TACCTL0 |= CCIE;                          // Compare-mode interrupt.
-  TACTL = TASSEL_2 | MC_1;                  // TACLK = SMCLK, Up mode.
+  TA1CCR0 = 30;                              // Delay to allow Ref to settle
+  TA1CCTL0 |= CCIE;                          // Compare-mode interrupt.
+  TA1CTL = TASSEL_2 | MC_1;                  // TACLK = SMCLK, Up mode.
   LPM0;                                     // Wait for delay.
-  TACCTL0 &= ~CCIE;                         // Disable timer Interrupt
+  TA1CCTL0 &= ~CCIE;                         // Disable timer Interrupt
   __disable_interrupt();
   ADC10CTL1 = INCH_1;                       // input A1
   ADC10AE0 |= 0x02;                         // PA.1 ADC option select
   P1DIR |= 0x01;                            // Set P1.0 to output direction
+
+  /* Buzzer Setup */
+  P2DIR |= BIT2;                            // P2.2 output - since LED is P2.1
+  P2SEL |= BIT2;                            // P2.2 for TA1.1 output
+  P2SEL2 &= ~(BIT2);								// Select default function for P2.1
+
+  TA1CCR0 = 64-1;                               // PWM Period
+  TA1CCTL1 = OUTMOD_7;                               // CCR1 reset/set
+  TA1CCR1 = 32;                      // CCR1 PWM duty cycle
+  TA1CTL = TASSEL_1 + MC_1;                        // ACLK, up mode
 
   for (;;)
   {
@@ -94,27 +106,15 @@ int main(void)
 }
 
 // ADC10 interrupt service routine
-#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR (void)
-#elif defined(__GNUC__)
-void __attribute__ ((interrupt(ADC10_VECTOR))) ADC10_ISR (void)
-#else
-#error Compiler not supported!
-#endif
 {
   __bic_SR_register_on_exit(CPUOFF);        // Clear CPUOFF bit from 0(SR)
 }
 
-#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
-#pragma vector=TIMER0_A0_VECTOR
-__interrupt void ta0_isr(void)
-#elif defined(__GNUC__)
-void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) ta0_isr (void)
-#else
-#error Compiler not supported!
-#endif
+#pragma vector=TIMER1_A0_VECTOR
+__interrupt void ta1_isr(void)
 {
-  TACTL = 0;
+  TA1CTL = 0;
   LPM0_EXIT;                                // Exit LPM0 on return
 }

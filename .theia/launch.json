@@ -9,6 +9,15 @@
                 "name": "Lab3Alarm",
                 "resourceId": "/Lab3Alarm"
             }
+        },
+        {
+            "name": "msp430g2x33_adc10_02.c",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "msp430g2x33_adc10_02.c",
+                "resourceId": "/msp430g2x33_adc10_02.c"
+            }
         }
     ]
 }
