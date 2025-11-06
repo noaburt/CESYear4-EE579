@@ -22,16 +22,19 @@
 //******************************************************************************
 
 #include <msp430.h>
+#include <math.h>
 
 #define LOW_PWM 64
 #define HIGH_PWM 32
-#define DUTY_PWM 2
+#define DUTY_PWM 0.5
 
 #define SWITCH_T 7000
+#define TUNE_MAX 16
 
-short tone_flag = 0;
-short tune_flag = 0;
+unsigned short tone_flag = 0;
+unsigned short tune_flag = 1;
 
+double tune_val[2] = {0};
 
 int main(void)
 {
@@ -50,6 +53,14 @@ int main(void)
   ADC10AE0 |= 0x02;                         // PA.1 ADC option select
   P1DIR |= 0x01;                            // Set P1.0 to output direction
 
+  /* Tuning Button Setup */
+  P1DIR |= BIT0;                            // P1.0 output
+  P1OUT =  BIT3;                            // P1.3 set, else reset
+  P1REN |= BIT3;                            // P1.3 pullup
+  P1IE |= BIT3;                             // P1.3 interrupt enabled
+  P1IES |= BIT3;                            // P1.3 Hi/lo edge
+  P1IFG &= ~BIT3;                           // P1.3 IFG cleared
+
   /* Switching Setup */
   TA0CCR0 = SWITCH_T-1;                          // Switching Period
   TA0CCTL1 = OUTMOD_3;                       // TACCR1 set/reset
@@ -66,15 +77,27 @@ int main(void)
   TA1CCR1 = 32;                      // CCR1 PWM duty cycle
   TA1CTL = TASSEL_1 + MC_1;                        // ACLK, up mode
 
+  int adc_read;
+  double tune_calc;
+
   for (;;)
   {
     ADC10CTL0 |= ENC + ADC10SC;             // Sampling and conversion start
-    __bis_SR_register(LPM3_bits + GIE);        // LPM0, ADC10_ISR will force exi
-    if (ADC10MEM < 0x88)                    // ADC10MEM = A1 > 0.2V?
-      P1OUT &= ~0x01;                       // Clear P1.0 LED off
-    else
-      P1OUT |= 0x01;                        // Set P1.0 LED on
+    __bis_SR_register(LPM3_bits + GIE);
+    adc_read = ADC10MEM;
+
+    /* Map adc read value from 0 - 3.3v to -16 - 16 */
+    tune_calc = ( (float)adc_read / 0x3FF ) * 0x20; // ( adc_read / 0x3FF ) * 0x20
+    tune_val[tune_flag] = -16 + floor(tune_calc);
   }
+}
+
+// Port 1 interrupt service routine
+#pragma vector=PORT1_VECTOR
+__interrupt void Port_1(void)
+{
+  tune_flag = ~tune_flag;
+  P1IFG &= ~BIT3;                           // P1.3 IFG cleared
 }
 
 // ADC10 interrupt service routine
@@ -94,16 +117,15 @@ __interrupt void ta1_isr(void)
 __interrupt void TA0_ISR(void)
 {
     if (tone_flag == 0) {
-      tone_flag = 1;
       // switch to high
-      TA1CCR0 = HIGH_PWM-1;
-      TA1CCR1 = HIGH_PWM / DUTY_PWM;
+      TA1CCR0 = (HIGH_PWM-tune_val[0]) - 1;
+      TA1CCR1 = (HIGH_PWM-tune_val[0]) * DUTY_PWM;
     } else {
-      tone_flag = 0;
       // switch to low
-      TA1CCR0 = LOW_PWM-1;
-      TA1CCR1 = LOW_PWM / DUTY_PWM;
+      TA1CCR0 = (LOW_PWM-tune_val[1]) - 1;
+      TA1CCR1 = (LOW_PWM-tune_val[1]) * DUTY_PWM;
     }
 
+  tone_flag = ~(tone_flag);
   LPM3_EXIT;
 }
