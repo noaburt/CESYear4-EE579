@@ -23,46 +23,51 @@
 
 #include <msp430.h>
 
-#define LOW_PWM 1000
-#define HIGH_PWM 2500
+#define LOW_PWM 64
+#define HIGH_PWM 512
+#define DUTY_PWM 2
+
+#define SWITCH_T 25000
 
 short f_flag = 0;
 
 int main(void)
 {
-  float pwm_D = 0.5;
-  int switch_T = 50000;
-
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
-  P1DIR |= BIT2;                            // P1.2 output
-  P1SEL |= BIT2;                            // P1.2 for TA0.1 output
-  P1SEL2 = 0;								// Select default function for P1.2
 
-  /* PWM Timer */
-  TA1CCR0 = pwm_T-1;                             // PWM Period
-  TA1CCTL1 = OUTMOD_7;                           // CCR1 reset/set
-  TA1CCR1 = pwm_T * pwm_D;                       // CCR1 PWM duty cycle
-  TA1CTL = TASSEL_2 + MC_1;                      // SMCLK, up mode
+  P2DIR |= BIT1;                            // P2.1 output
+  P2SEL |= BIT1;                            // P2.1 for TA1.1 output
+  P2SEL2 &= ~(BIT1);								// Select default function for P2.1
 
-  /* Switching Timer */
-  TA0CCTL0 = CCIE;                             // TA0CCR0 interrupt enabled
-  TA0CCR0 = switch_T-1;
-  TA0CTL = TASSEL_1 + MC_1;
+  TA1CCR0 = LOW_PWM-1;                               // PWM Period
+  TA1CCTL1 = OUTMOD_7;                               // CCR1 reset/set
+  TA1CCR1 = LOW_PWM / DUTY_PWM;                      // CCR1 PWM duty cycle
+  TA1CTL = TASSEL_1 + MC_1;                        // SMCLK, up mode
 
-  __bis_SR_register(LPM3_bits + GIE);                // Enter LPM3
+  TA0CCR0 = SWITCH_T-1;                          // PWM Period
+  TA0CCTL1 = OUTMOD_3;                       // TACCR1 set/reset
+  TA0CTL = TASSEL_1 + MC_1;                  // ACLK, up mode
+
+  TA0CCTL0 |= CCIE;                          // Compare-mode interrupt.
+
+  __bis_SR_register(LPM3_bits + GIE);
 }
 
 
-// TA0_A1 Interrupt vector
-#pragma vector = TIMER0_A1_VECTOR
-__interrupt void TIMER0_A1_ISR (void)
+#pragma vector=TIMER0_A0_VECTOR
+__interrupt void TA0_ISR(void)
 {
   // Switch high / low frequency
 
   if (f_flag == 0) {
     // switch to high
+    TA1CCR0 = HIGH_PWM-1;
+    TA1CCR1 = HIGH_PWM / DUTY_PWM;
+    f_flag = 1;
   } else {
     // switch to low
+    TA1CCR0 = LOW_PWM-1;
+    TA1CCR1 = LOW_PWM / DUTY_PWM;
+    f_flag = 0;
   }
 }
-
