@@ -24,10 +24,10 @@
 #include <msp430.h>
 
 #define LOW_PWM 64
-#define HIGH_PWM 512
+#define HIGH_PWM 32
 #define DUTY_PWM 2
 
-#define SWITCH_T 25000
+#define SWITCH_T 7000
 
 short f_flag = 0;
 
@@ -35,9 +35,9 @@ int main(void)
 {
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
-  P2DIR |= BIT1;                            // P2.1 output
-  P2SEL |= BIT1;                            // P2.1 for TA1.1 output
-  P2SEL2 &= ~(BIT1);								// Select default function for P2.1
+  P2DIR |= BIT2;                            // P2.1 output
+  P2SEL |= BIT2;                            // P2.1 for TA1.1 output
+  P2SEL2 &= ~(BIT2);								// Select default function for P2.1
 
   TA1CCR0 = LOW_PWM-1;                               // PWM Period
   TA1CCTL1 = OUTMOD_7;                               // CCR1 reset/set
