@@ -54,10 +54,9 @@ SetupTA0    mov.w   #SWITCH_T-1,&TA0CCR0
             mov.w   #OUTMOD_3,&TA0CCTL1
             mov.w   #TASSEL_1+MC_1,&TA0CTL
             mov.w   #CCIE,&TA0CCTL0
-            mov.w   #0b,R4                  ; Tone flag
+            mov.w   #0b,R4                  ; Flags (bit 0 - tone, bit 1 - tuning)
             mov.w   #0b,R5                  ; Low tone value
             mov.w   #0b,R6                  ; High tone value
-            mov.w   #0b,R7                  ; Tuning flag (high or low)
 
 SetupP2     bis.b   #BIT2,&P2DIR            ; P2.2 output
             bis.b   #BIT2,&P2SEL            ; P2.2 TA1.1 output
@@ -70,18 +69,18 @@ SetupTA1    mov.w   #LOW_PWM-1,&TA1CCR0     ; PWM Period
 				
 Mainloop    bis     #GIE+CPUOFF+SCG1+SCG0,SR; Enter LPM3
             nop                             ; Required only for debugger
-            ; read adc to R8, set either R6 or R5 to R8
-            cmp     #1b,R7                  ; R7 - 1 (0 = high tone)
+            ; read adc to R7, set either R6 or R5 to R7
+            bit     #BIT1,R4                ; Get tuning flag (bit 1) (0 == high tone)
             jz      HIGH_TUNE
-            mov.w   #0b,R6
+            mov.w   #0b,R6 ; move R7
             jmp Mainloop
-HIGH_TUNE   mov.w   #0b,R5
+HIGH_TUNE   mov.w   #0b,R5 ; move R7
             jmp Mainloop
                                             ;
 ;-------------------------------------------------------------------------------
 TA0_ISR;    Toggle Tone
 ;-------------------------------------------------------------------------------
-            inv.b   R4                      ; Toggle tone flag
+            xor     #BIT0,R4                ; Toggle tone flag (R4 XOR BIT0)
             jz      HIGH_SW                 ; Switch to high tone
             mov.w   #LOW_PWM-1,R8
             add.w   R6,R8
