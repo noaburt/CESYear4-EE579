@@ -24,12 +24,11 @@
 #include <msp430.h>
 #include <math.h>
 
-#define LOW_PWM 64
-#define HIGH_PWM 32
+#define LOW_PWM 80
+#define HIGH_PWM 48
 #define DUTY_PWM 0.5
 
 #define SWITCH_T 7000
-#define TUNE_MAX 16
 
 unsigned short tone_flag = 0;
 unsigned short tune_flag = 0;
@@ -51,7 +50,6 @@ int main(void)
   __disable_interrupt();
   ADC10CTL1 = INCH_1;                       // input A1
   ADC10AE0 |= 0x02;                         // PA.1 ADC option select
-  P1DIR |= 0x01;                            // Set P1.0 to output direction
 
   /* Tuning Button Setup */
   P1DIR |= BIT0;                            // P1.0 output
