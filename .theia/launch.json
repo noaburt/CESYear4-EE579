@@ -29,12 +29,21 @@
             }
         },
         {
-            "name": "msp430g2xx3_P1_04.asm",
+            "name": "Lab1AOCL",
             "type": "ccs-debug",
             "request": "launch",
             "projectInfo": {
-                "name": "msp430g2xx3_P1_04.asm",
-                "resourceId": "/msp430g2xx3_P1_04.asm"
+                "name": "Lab1AOCL",
+                "resourceId": "/Lab1AOCL"
+            }
+        },
+        {
+            "name": "Lab4Asm (1)",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "Lab4Asm",
+                "resourceId": "/Lab4Asm"
             }
         }
     ]

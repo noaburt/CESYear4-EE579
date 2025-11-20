@@ -54,9 +54,11 @@ SetupTA0    mov.w   #SWITCH_T-1,&TA0CCR0
             mov.w   #OUTMOD_3,&TA0CCTL1
             mov.w   #TASSEL_1+MC_1,&TA0CTL
             mov.w   #CCIE,&TA0CCTL0
-            mov.w   #0b,R4                  ; Flags (bit 0 - tone, bit 1 - tuning)
+            mov.w   #0b,R4                  ; Tone flag
             mov.w   #0b,R5                  ; Low tone value
             mov.w   #0b,R6                  ; High tone value
+            mov.w   #0b,R7                  ; Tuning flag
+            mov.w   #0b,R8                  ; Set tone
 
 SetupP2     bis.b   #BIT2,&P2DIR            ; P2.2 output
             bis.b   #BIT2,&P2SEL            ; P2.2 TA1.1 output
@@ -69,29 +71,43 @@ SetupTA1    mov.w   #LOW_PWM-1,&TA1CCR0     ; PWM Period
 				
 Mainloop    bis     #GIE+CPUOFF+SCG1+SCG0,SR; Enter LPM3
             nop                             ; Required only for debugger
-            ; read adc to R7, set either R6 or R5 to R7
+
+TuneTone    ; read adc to R7, set either R6 or R5 to R7
             bit     #BIT1,R4                ; Get tuning flag (bit 1) (0 == high tone)
             jz      HIGH_TUNE
-            mov.w   #0b,R6 ; move R7
+
+            mov.w   #0b,R6 ; move R7 to change high
             jmp Mainloop
-HIGH_TUNE   mov.w   #0b,R5 ; move R7
+            nop
+
+HIGH_TUNE   mov.w   #0b,R5 ; move R7 to change low
             jmp Mainloop
+            nop
                                             ;
 ;-------------------------------------------------------------------------------
 TA0_ISR;    Toggle Tone
 ;-------------------------------------------------------------------------------
-            xor     #BIT0,R4                ; Toggle tone flag (R4 XOR BIT0)
-            jz      HIGH_SW                 ; Switch to high tone
-            mov.w   #LOW_PWM-1,R8
-            add.w   R6,R8
-            mov.w   #LOW_PWM>>1,R9
-            jmp     SET_PWM
-HIGH_SW     mov.w   #HIGH_PWM-1,R8
-            mov.w   #HIGH_PWM>>1,R9
+CheckTone   cmp.b   #1b,R4                  ; Tone flag check (1 - R4 = 0 -> high tone)
+            jz      SetHigh
+            nop
 
-SET_PWM     mov.w   R8,&TA1CCR0
-            mov.w   R9,&TA1CCR1 ; REWORK THIS PART
-            bic     #GIE+CPUOFF+SCG1+SCG0,SR; Exit LPM3
+SetLow      mov.w   #LOW_PWM-1,R8
+            mov.w   R8,&TA1CCR0
+            add.w   #1b,R8
+            rrc     R8                      ; Divide by 2
+            mov.w   R8,&TA1CCR1             ; 50% duty cycle
+            mov.w   #1b,R4
+            jmp     EndISR
+            nop
+
+SetHigh     mov.w   #HIGH_PWM-1,R8
+            mov.w   R8,&TA1CCR0
+            add.w   #1b,R8
+            rrc     R8                      ; Divide by 2
+            mov.w   R8,&TA1CCR1             ; 50% duty cycle
+            mov.w   #0b,R4
+
+EndISR      bic     #GIE+CPUOFF+SCG1+SCG0,0(SP); Exit LPM3
             reti                            ;		
                                             ;
 ;------------------------------------------------------------------------------
