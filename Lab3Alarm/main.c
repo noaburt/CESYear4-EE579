@@ -70,7 +70,7 @@ int main(void)
   /* Buzzer Setup */
   P2DIR |= BIT2;                            // P2.2 output - since LED is P2.1
   P2SEL |= BIT2;                            // P2.2 for TA1.1 output
-  P2SEL2 &= ~(BIT2);								// Select default function for P2.1
+  P2SEL2 &= ~(BIT2);								// Select default function for P2.2
 
   /* PWM Setup */
   TA1CCR0 = 64-1;                               // PWM Period

@@ -38,25 +38,69 @@
             .def    RESET                   ; Export program entry-point to
                                             ; make it known to linker.
 
+LOW_PWM     .set    64
+HIGH_PWM    .set    32
+
+SWITCH_T    .set    7000
+TUNE_MAX    .set    16
+
 ;------------------------------------------------------------------------------
             .text                           ; Progam Start
 ;------------------------------------------------------------------------------
 RESET       mov.w   #0280h,SP               ; Initialize stackpointer
 StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
-SetupP1     bis.b   #00Ch,&P1DIR            ; P1.2 and P1.3 output
-            bis.b   #00Ch,&P1SEL            ; P1.2 and P1.3 TA1/2 otions
-SetupC0     mov.w   #512-1,&CCR0            ; PWM Period
-SetupC1     mov.w   #OUTMOD_7,&CCTL1        ; CCR1 reset/set
-            mov.w   #384,&CCR1              ; CCR1 PWM Duty Cycle	
-SetupTA     mov.w   #TASSEL_2+MC_1,&TACTL   ; SMCLK, upmode
-                                            ;					
-Mainloop    bis.w   #CPUOFF,SR              ; CPU off
+
+SetupTA0    mov.w   #SWITCH_T-1,&TA0CCR0
+            mov.w   #OUTMOD_3,&TA0CCTL1
+            mov.w   #TASSEL_1+MC_1,&TA0CTL
+            mov.w   #CCIE,&TA0CCTL0
+            mov.w   #0b,R4                  ; Tone flag
+            mov.w   #0b,R5                  ; Low tone value
+            mov.w   #0b,R6                  ; High tone value
+            mov.w   #0b,R7                  ; Tuning flag (high or low)
+
+SetupP2     bis.b   #BIT2,&P2DIR            ; P2.2 output
+            bis.b   #BIT2,&P2SEL            ; P2.2 TA1.1 output
+            bic.b   #BIT2,&P2SEL2           ; P2.2 default function
+
+SetupTA1    mov.w   #LOW_PWM-1,&TA1CCR0     ; PWM Period
+            mov.w   #OUTMOD_7,&TA1CCTL1     ; TA1CCR1 reset/set
+            mov.w   #LOW_PWM>>1,&TA1CCR1    ; TA1CCR1 PWM Duty Cycle (pwm / 2)
+            mov.w   #TASSEL_1+MC_1,&TA1CTL  ; ACLK, upmode
+				
+Mainloop    bis     #GIE+CPUOFF+SCG1+SCG0,SR; Enter LPM3
             nop                             ; Required only for debugger
+            ; read adc to R8, set either R6 or R5 to R8
+            cmp     #1b,R7                  ; R7 - 1 (0 = high tone)
+            jz      HIGH_TUNE
+            mov.w   #0b,R6
+            jmp Mainloop
+HIGH_TUNE   mov.w   #0b,R5
+            jmp Mainloop
+                                            ;
+;-------------------------------------------------------------------------------
+TA0_ISR;    Toggle Tone
+;-------------------------------------------------------------------------------
+            inv.b   R4                      ; Toggle tone flag
+            jz      HIGH_SW                 ; Switch to high tone
+            mov.w   #LOW_PWM-1,R8
+            add.w   R6,R8
+            mov.w   #LOW_PWM>>1,R9
+            jmp     SET_PWM
+HIGH_SW     mov.w   #HIGH_PWM-1,R8
+            mov.w   #HIGH_PWM>>1,R9
+
+SET_PWM     mov.w   R8,&TA1CCR0
+            mov.w   R9,&TA1CCR1 ; REWORK THIS PART
+            bic     #GIE+CPUOFF+SCG1+SCG0,SR; Exit LPM3
+            reti                            ;		
                                             ;
 ;------------------------------------------------------------------------------
 ;           Interrupt Vectors
 ;------------------------------------------------------------------------------
             .sect   ".reset"                ; MSP430 RESET Vector
             .short  RESET                   ;
+            .sect   ".int09"                ; Timer_A0 Vector
+            .short  TA0_ISR
             .end
 

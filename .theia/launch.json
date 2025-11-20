@@ -9,6 +9,33 @@
                 "name": "Lab3Alarm",
                 "resourceId": "/Lab3Alarm"
             }
+        },
+        {
+            "name": "Lab4AsmAlarm",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "Lab4AsmAlarm",
+                "resourceId": "/Lab4AsmAlarm"
+            }
+        },
+        {
+            "name": "msp430g2xx2_P1_04.asm",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "msp430g2xx2_P1_04.asm",
+                "resourceId": "/msp430g2xx2_P1_04.asm"
+            }
+        },
+        {
+            "name": "msp430g2xx3_P1_04.asm",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "msp430g2xx3_P1_04.asm",
+                "resourceId": "/msp430g2xx3_P1_04.asm"
+            }
         }
     ]
 }
