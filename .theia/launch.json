@@ -5,6 +5,7 @@
             "name": "Lab3Alarm",
             "type": "ccs-debug",
             "request": "launch",
+            "targetConfig": "${workspaceFolder}/Lab3Alarm/targetConfigs/MSP430G2553.ccxml",
             "projectInfo": {
                 "name": "Lab3Alarm",
                 "resourceId": "/Lab3Alarm"
@@ -14,6 +15,7 @@
             "name": "Lab4AsmAlarm",
             "type": "ccs-debug",
             "request": "launch",
+            "targetConfig": "${workspaceFolder}/Lab4AsmAlarm/targetConfigs/MSP430G2553.ccxml",
             "projectInfo": {
                 "name": "Lab4AsmAlarm",
                 "resourceId": "/Lab4AsmAlarm"
@@ -23,9 +25,20 @@
             "name": "Lab1AOCL",
             "type": "ccs-debug",
             "request": "launch",
+            "targetConfig": "${workspaceFolder}/Lab1AOCL/targetConfigs/MSP430G2553.ccxml",
             "projectInfo": {
                 "name": "Lab1AOCL",
                 "resourceId": "/Lab1AOCL"
+            }
+        },
+        {
+            "name": "Lab2Timer",
+            "type": "ccs-debug",
+            "request": "launch",
+            "targetConfig": "${workspaceFolder}/Lab2Timer/targetConfigs/MSP430G2553.ccxml",
+            "projectInfo": {
+                "name": "Lab2Timer",
+                "resourceId": "/Lab2Timer"
             }
         },
     ]
