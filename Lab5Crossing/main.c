@@ -28,8 +28,8 @@
 int main(void)
 {
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
-  P1DIR |= 0x0C;                            // P1.2 and P1.3 output
-  P1SEL |= 0x0C;                            // P1.2 and P1.3 TA1/2 options
+  P1DIR |= BIT0;                            // P1.0 output
+  P1SEL |= BIT0;                            // P1.0 TA1/2 options
   CCR0 = 512-1;                             // PWM Period
   CCTL1 = OUTMOD_7;                         // CCR1 reset/set
   CCR1 = 384;                               // CCR1 PWM duty cycle

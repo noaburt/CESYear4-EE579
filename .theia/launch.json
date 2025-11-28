@@ -41,5 +41,14 @@
                 "resourceId": "/Lab2Timer"
             }
         },
+        {
+            "name": "Lab5Crossing",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "Lab5Crossing",
+                "resourceId": "/Lab5Crossing"
+            }
+        }
     ]
 }
