@@ -23,6 +23,8 @@
 //   Built with CCS Version 4.2.0 and IAR Embedded Workbench Version: 5.10
 //******************************************************************************
 
+// Buzzer - GND, P2.2
+
 #include <msp430.h>
 
 #define KLAX_LOW 64

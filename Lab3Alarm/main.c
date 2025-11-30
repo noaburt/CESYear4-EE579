@@ -21,6 +21,9 @@
 //  Built with CCS Version 4.2.0 and IAR Embedded Workbench Version: 5.10
 //******************************************************************************
 
+// Buzzer - GND, P2.2
+// Pot    - GND, P1.1, 3.3V
+
 #include <msp430.h>
 #include <math.h>
 
