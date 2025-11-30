@@ -94,15 +94,15 @@ int main(void)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void TA0_ISR(void)
 {
-    if (tone_flag == 0) {
-      // switch to high
-      TA1CCR0 = (HIGH_PWM-tune_val[0]) - 1;
-      TA1CCR1 = (HIGH_PWM-tune_val[0]) * DUTY_PWM;
-    } else {
-      // switch to low
-      TA1CCR0 = (LOW_PWM-tune_val[1]) - 1;
-      TA1CCR1 = (LOW_PWM-tune_val[1]) * DUTY_PWM;
-    }
+  if (tone_flag == 0) {
+    // switch to high
+    TA1CCR0 = (HIGH_PWM-tune_val[0]) - 1;
+    TA1CCR1 = (HIGH_PWM-tune_val[0]) * DUTY_PWM;
+  } else {
+    // switch to low
+    TA1CCR0 = (LOW_PWM-tune_val[1]) - 1;
+    TA1CCR1 = (LOW_PWM-tune_val[1]) * DUTY_PWM;
+  }
 
   tone_flag = ~(tone_flag);
   LPM3_EXIT;

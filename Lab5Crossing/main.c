@@ -25,22 +25,26 @@
 
 #include <msp430.h>
 
-#define KLAX_LOW 80
-#define KLAX_HIGH 48
+#define KLAX_LOW 64
+#define KLAX_HIGH 32
 #define KLAX_DUTY 1   // Shift >> 1 == / 2 == 50% duty
 
 /* LED Flash Logic
  *  - 5% duty is 1 on per 20 off, 50% is 10 on per 20 off
  *  - 30 flash per min = 2 flash per sec = TIMER VALUE ---------------------- TODO FIND VALUE
  *  - 2 flash per sec * 20 checks per "flash" = 40 checks per sec
- *  - 32768Hz clock, require pwm period of 25ms, 0.025 * 32768 = 819.2 
+ *  - 32768Hz clock, require period of 25ms, 0.025 * 32768 = 819.2 
  */
 
 #define LED_FLASH 820
 #define LED_TOTAL 20
 
-unsigned short sw_flag;
+unsigned short tone_flag;
+unsigned short driver_flag;
+
 unsigned short led_duty_count;
+unsigned short driver_count;
+
 unsigned short sw_read;
 
 static unsigned short led_duty_amount[2] = {1, 10};
@@ -60,7 +64,7 @@ int main(void)
   TA1CTL = TASSEL_1 + MC_1;                 // ACLK, up mode
 
   /* Driver LED */
-  P1DIR |= BIT0;                            // P1.0 output
+  P1DIR |= BIT0;
   P1OUT &= ~(BIT0);
 
   TA0CCR0 = LED_FLASH-1;
@@ -68,22 +72,46 @@ int main(void)
   TA0CTL = TASSEL_1 + MC_1;
   TA0CCTL0 |= CCIE;                          // Compare-mode interrupt
 
+  /* Red LEDs */
+  P1DIR |= BIT6;
+  P2DIR |= BIT1 + BIT3 + BIT5;              // Set P2.1, P2.3, and P2.5 to output direction (Multi LED)
+
+  P1OUT &= ~BIT6;
+  P2OUT &= ~(BIT1 + BIT3 + BIT5);
+
   /* Button Setup */
   P1REN |= BIT3;                            // P1.3 pullup
 
-  sw_flag = 0;
+  tone_flag = 0;
   led_duty_count = 0;
+  driver_count = 0;
+  driver_flag = 0;
 
   unsigned short check;
 
   for (;;) {
     __bis_SR_register(LPM3_bits + GIE);
 
-    /* Set led on / off */
     sw_read = P1IN & BIT3;
-    check = sw_read == 0;
 
-    if (led_duty_count++ <= led_duty_amount[check]) { // Button pressed -> sw_read = 1 -> 50% duty --------------------- CHANGE TO 3 SECONDS AFTER BUTTON
+    /* Driver flag = button pressed for 3 seconds */
+    if (sw_read > 0) {
+      driver_flag = 0;
+      driver_count = 0;
+      P1OUT &= ~BIT6;
+      P2OUT &= ~BIT1;
+    }
+    
+    if (driver_count < LED_TOTAL*5) {
+      driver_count++;
+    } else {
+      driver_flag = 1;
+    }
+
+    /* Set led on / off */
+    check = (sw_read == 0 && driver_flag == 1);
+
+    if (led_duty_count++ <= led_duty_amount[check]) { // Button pressed -> sw_read = 1 -> 50% duty
       /* 1st part of duty, LED on */
       P1OUT |= BIT0;
     } else {
@@ -91,7 +119,34 @@ int main(void)
       P1OUT &= ~BIT0;
     }
 
-    if (led_duty_count > LED_TOTAL) led_duty_count = 0;
+    /* Toggle tone and reds */
+    if (led_duty_count > LED_TOTAL) {
+      led_duty_count = 0;
+
+      if (tone_flag == 0) {
+        // switch to high
+        TA1CCR0 = KLAX_HIGH - 1;
+        TA1CCR1 = KLAX_HIGH >> KLAX_DUTY;
+
+        if (check > 0) {
+          // multi led on, red off
+          P2OUT |= BIT1;
+          P1OUT &= ~BIT6;
+        }
+      } else {
+        // switch to low
+        TA1CCR0 = KLAX_LOW - 1;
+        TA1CCR1 = KLAX_LOW >> KLAX_DUTY;
+
+        if (check > 0) {
+          // red led on, multi off
+          P1OUT |= BIT6;
+          P2OUT &= ~BIT1;
+        }
+      }
+
+      tone_flag = ~(tone_flag);
+    }
   }
 }
 

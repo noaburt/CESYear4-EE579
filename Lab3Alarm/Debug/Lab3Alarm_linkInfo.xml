@@ -2,7 +2,7 @@
 <link_info>
    <banner>MSP430 Linker Unix v21.6.1.LTS</banner>
    <copyright>Copyright (c) 2003-2018 Texas Instruments Incorporated</copyright>
-   <link_time>0x6929cc8e</link_time>
+   <link_time>0x692c9348</link_time>
    <link_errors>0x0</link_errors>
    <output_file>Lab3Alarm.out</output_file>
    <entry_point>
