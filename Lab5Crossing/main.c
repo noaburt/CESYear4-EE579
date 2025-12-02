@@ -61,9 +61,11 @@ int main(void)
   P2SEL2 &= ~(BIT2);
 
   TA1CCR0 = KLAX_LOW-1;
-  TA1CCTL1 = OUTMOD_7;                      // TA0CCR1 reset/set
+  TA1CCTL1 = OUTMOD_7;                      // TA1CCR1 reset/set
   TA1CCR1 = KLAX_LOW >> KLAX_DUTY;
   TA1CTL = TASSEL_1 + MC_1;                 // ACLK, up mode
+
+  TA1CCR0 = 0;                              // No sound on startup
 
   /* Driver LED */
   P1DIR |= BIT0;
@@ -125,22 +127,22 @@ int main(void)
     if (led_duty_count > LED_TOTAL) {
       led_duty_count = 0;
 
-      if (tone_flag == 0) {
-        // switch to high
-        TA1CCR0 = KLAX_HIGH - 1;
-        TA1CCR1 = KLAX_HIGH >> KLAX_DUTY;
+      if (check == 0) {
+        TA1CCR0 = 0;
+      } else {
+        if (tone_flag == 0) {
+          // switch to high
+          TA1CCR0 = KLAX_HIGH - 1;
+          TA1CCR1 = KLAX_HIGH >> KLAX_DUTY;
 
-        if (check > 0) {
           // multi led on, red off
           P2OUT |= BIT1;
           P1OUT &= ~BIT6;
-        }
-      } else {
-        // switch to low
-        TA1CCR0 = KLAX_LOW - 1;
-        TA1CCR1 = KLAX_LOW >> KLAX_DUTY;
+        } else {
+          // switch to low
+          TA1CCR0 = KLAX_LOW - 1;
+          TA1CCR1 = KLAX_LOW >> KLAX_DUTY;
 
-        if (check > 0) {
           // red led on, multi off
           P1OUT |= BIT6;
           P2OUT &= ~BIT1;
