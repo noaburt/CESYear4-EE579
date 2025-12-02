@@ -41,15 +41,15 @@
 #define LED_FLASH 820
 #define LED_TOTAL 20
 
+#define CROSSING_TOTAL 26 // 1.3 (period) / 0.025 (interupt) = 52 interrupts ( / 2 for on & off )
+
 unsigned short tone_flag;
 unsigned short driver_flag;
 
 unsigned short led_duty_count;
+unsigned short led_duty;
 unsigned short driver_count;
-
-unsigned short sw_read;
-
-static unsigned short led_duty_amount[2] = {1, 10};
+unsigned short led_crossing_count;
 
 int main(void)
 {
@@ -88,34 +88,47 @@ int main(void)
 
   tone_flag = 0;
   led_duty_count = 0;
+  led_duty = 0;
   driver_count = 0;
+  led_crossing_count = 0;
   driver_flag = 0;
 
-  unsigned short check;
+  unsigned short sw_off;
 
   for (;;) {
     __bis_SR_register(LPM3_bits + GIE);
 
-    sw_read = P1IN & BIT3;
+    sw_off = (P1IN & BIT3) > 0;
 
-    /* Driver flag = button pressed for 3 seconds */
-    if (sw_read > 0) {
+    led_duty = 1;     // led duty is 1 until 6s after button pressed
+
+    if (sw_off) {
       driver_flag = 0;
       driver_count = 0;
+      led_crossing_count = 0;
+
       P1OUT &= ~BIT6;
-      P2OUT &= ~BIT1;
+      P2OUT &= ~(BIT1 + BIT3 + BIT5);
     }
     
-    if (driver_count < LED_TOTAL*6) {
+    if (driver_count < LED_TOTAL*12) {
       driver_count++;
-    } else {
-      driver_flag = 1;
     }
 
-    /* Set led on / off */
-    check = (sw_read == 0);
+    if (driver_count >= LED_TOTAL*5) {          // 3 seconds has passed, start toggle reds
+      driver_flag = 1;
 
-    if (led_duty_count++ <= led_duty_amount[(check && driver_flag == 1)]) { // Button pressed -> sw_read = 1 -> 50% duty
+      if (driver_count >= LED_TOTAL*12) {       // 6 seconds has passed, start 50% green
+        led_duty = 10;
+      }
+    }
+
+    /* Set green led on / off */
+    if (led_duty_count++ > LED_TOTAL) {
+      led_duty_count = 0;
+    }
+
+    if (led_duty_count <= led_duty) { // Button pressed -> sw_read = 1 -> 50% duty
       /* 1st part of duty, LED on */
       P1OUT |= BIT0;
     } else {
@@ -123,19 +136,27 @@ int main(void)
       P1OUT &= ~BIT0;
     }
 
-    /* Toggle tone and reds */
-    if (led_duty_count > LED_TOTAL) {
-      led_duty_count = 0;
+    /* Set yellow / crossing leds */
+    if (sw_off || driver_flag == 0) {
+      TA1CCR0 = 0;
 
-      if (check == 0) {
-        TA1CCR0 = 0;
+      if (sw_off) {
+        P2OUT &= ~(BIT1 + BIT3 + BIT5);
       } else {
+        P2OUT |= BIT1 + BIT3;
+      }
+    } else {
+      if (led_crossing_count++ > CROSSING_TOTAL) {
+        led_crossing_count = 0;
+
+        /* Toggle tone and reds */
         if (tone_flag == 0) {
           // switch to high
           TA1CCR0 = KLAX_HIGH - 1;
           TA1CCR1 = KLAX_HIGH >> KLAX_DUTY;
 
           // multi led on, red off
+          P2OUT &= ~(BIT1 + BIT3 + BIT5);
           P2OUT |= BIT1;
           P1OUT &= ~BIT6;
         } else {
@@ -145,11 +166,11 @@ int main(void)
 
           // red led on, multi off
           P1OUT |= BIT6;
-          P2OUT &= ~BIT1;
+          P2OUT &= ~(BIT1 + BIT3 + BIT5);
         }
-      }
 
-      tone_flag = ~(tone_flag);
+        tone_flag = ~(tone_flag);
+      }
     }
   }
 }
