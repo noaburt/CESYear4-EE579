@@ -104,16 +104,16 @@ int main(void)
       P2OUT &= ~BIT1;
     }
     
-    if (driver_count < LED_TOTAL*5) {
+    if (driver_count < LED_TOTAL*6) {
       driver_count++;
     } else {
       driver_flag = 1;
     }
 
     /* Set led on / off */
-    check = (sw_read == 0 && driver_flag == 1);
+    check = (sw_read == 0);
 
-    if (led_duty_count++ <= led_duty_amount[check]) { // Button pressed -> sw_read = 1 -> 50% duty
+    if (led_duty_count++ <= led_duty_amount[(check && driver_flag == 1)]) { // Button pressed -> sw_read = 1 -> 50% duty
       /* 1st part of duty, LED on */
       P1OUT |= BIT0;
     } else {
